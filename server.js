@@ -19,7 +19,7 @@ const IS_DEV = process.env.NODE_ENV !== 'production';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Middleware CORS universal para GitHub Pages + Railway
+// 🎯 Middleware CORS para GitHub Pages + Railway
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   const allowedOrigins = [
@@ -36,7 +36,7 @@ app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Credentials', 'true');
 
   if (req.method === 'OPTIONS') {
-    return res.sendStatus(204); // Finaliza preflight
+    return res.sendStatus(204);
   }
 
   next();
@@ -44,14 +44,14 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 
-// Rutas de la API
+// 📌 Rutas de la API
 app.use('/api/teachers', teacherRoutes);
 app.use('/api/levels', levelsRoutes);
 app.use('/api/grades', gradesRoutes);
 app.use('/api/students', studentsRoutes);
 app.use('/api/attendance', attendanceRoutes);
 
-// Middleware de autenticación
+// 🔐 Middleware de autenticación
 export const isAuthenticated = async (req, res, next) => {
   const userIdHeader = req.header('authorization');
   const userId = parseInt(userIdHeader, 10);
@@ -73,12 +73,13 @@ export const isAuthenticated = async (req, res, next) => {
   }
 };
 
-// Login
+// 🔐 Login
 app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
     return res.status(400).json({ error: 'Faltan campos' });
   }
+
   try {
     const [rows] = await db.query(
       'SELECT id, name, email, role FROM users WHERE email = ? AND password = ?',
@@ -87,6 +88,7 @@ app.post('/api/login', async (req, res) => {
     if (rows.length === 0) {
       return res.status(401).json({ error: 'Credenciales incorrectas' });
     }
+
     res.json({ user: rows[0] });
   } catch (err) {
     console.error(err);
@@ -94,7 +96,7 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Signup
+// 🔐 Signup
 app.post('/api/signup', async (req, res) => {
   const { name, email, password, recoveryWord, role } = req.body;
   if (!name || !email || !password || !role || !recoveryWord) {
@@ -125,7 +127,7 @@ app.post('/api/signup', async (req, res) => {
   }
 });
 
-// Password recovery y reset
+// 🔐 Password recovery
 const recoveryTokens = new Map();
 const TOKEN_EXPIRY_MS = 15 * 60 * 1000;
 
@@ -177,7 +179,7 @@ app.post('/api/reset-password', async (req, res) => {
   }
 });
 
-// Endpoints protegidos con autenticación
+// 🔐 Endpoints protegidos
 app.get('/api/users', isAuthenticated, async (_req, res) => {
   try {
     const [rows] = await db.query('SELECT id, name, email, role FROM users');
@@ -202,7 +204,7 @@ app.get('/api/user/:email', isAuthenticated, async (req, res) => {
   }
 });
 
-// Endpoint debug (solo en desarrollo)
+// 🐞 Debug (solo en desarrollo)
 if (IS_DEV) {
   app.get('/api/debug/users', async (_req, res) => {
     try {
@@ -215,11 +217,11 @@ if (IS_DEV) {
   });
 }
 
-// Servir frontend React desde la carpeta dist
-app.use(express.static(path.join(__dirname, 'dist')));
+// 🎯 Servir frontend React correctamente desde /asistencia1.5
+app.use('/asistencia1.5', express.static(path.join(__dirname, 'dist')));
 
-// Redirigir todas las rutas no-API a index.html para SPA React
-app.get(/^\/(?!api).*/, (_req, res) => {
+// 🧭 Redirigir rutas React tipo SPA
+app.get(/^\/asistencia1.5(\/.*)?$/, (_req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 

@@ -3,8 +3,7 @@ import path from "path";
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  base: "/asistencia1.5/", // 👈 ¡ESTO ES CLAVE!
-  plugins: [react()],
+  base: "/asistencia1.5/", 
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
