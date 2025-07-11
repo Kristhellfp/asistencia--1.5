@@ -8,18 +8,18 @@ import { fileURLToPath } from 'url';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Obtener __dirname en ES modules
+// Obtener __dirname en ES Modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Middleware CORS universal (ajusta si quieres restringir orígenes)
+// Middleware CORS (ajusta origen si quieres restringir)
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-// Middleware para parsear JSON
+// Middleware para parsear JSON en cuerpo de peticiones
 app.use(express.json());
 
 // Rutas API
@@ -31,7 +31,7 @@ app.get('/api/users', async (_req, res) => {
     res.json(rows);
   } catch (err) {
     console.error('Error en /api/users:', err);
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ error: 'Error en la base de datos' });
   }
 });
 
@@ -121,11 +121,12 @@ app.get('/api/user/:email', async (req, res) => {
 // Servir frontend estático desde /asistencia1.5
 app.use('/asistencia1.5', express.static(path.join(__dirname, 'dist')));
 
-// Redirigir rutas SPA no API a index.html para que React Router funcione
+// Para rutas SPA no API bajo /asistencia1.5, enviar index.html para React Router funcione
 app.get(/^\/asistencia1\.5\/(?!api).*/, (_req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
+// Arrancar servidor
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en http://localhost:${PORT}`);
 });
