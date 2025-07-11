@@ -10,7 +10,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "build:sourcemap": "vite build",
-    "deploy": "npm run build && gh-pages -d dist"
+    "deploy": "npm run build && gh-pages -d dist",
+    "start": "node server.js",
+    "railway-start": "npm run build && npm run start"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
