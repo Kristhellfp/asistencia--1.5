@@ -6,17 +6,23 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // Obtener __dirname en ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Middleware
-app.use(cors());
+// Middleware CORS universal (ajusta si quieres restringir orígenes)
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
+// Middleware para parsear JSON
 app.use(express.json());
 
-// API endpoints
+// Rutas API
 
 // Obtener todos los usuarios
 app.get('/api/users', async (_req, res) => {
@@ -112,10 +118,10 @@ app.get('/api/user/:email', async (req, res) => {
   }
 });
 
-// Servir archivos estáticos del frontend en /asistencia1.5
+// Servir frontend estático desde /asistencia1.5
 app.use('/asistencia1.5', express.static(path.join(__dirname, 'dist')));
 
-// Redirigir rutas no API bajo /asistencia1.5 a index.html (SPA)
+// Redirigir rutas SPA no API a index.html para que React Router funcione
 app.get(/^\/asistencia1\.5\/(?!api).*/, (_req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });

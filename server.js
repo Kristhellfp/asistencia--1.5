@@ -8,11 +8,18 @@ import gradesRoutes from './routes/grades.js';
 import studentsRoutes from './routes/students.js';
 import attendanceRoutes from './routes/attendance.js';
 
+import path from 'path';
+import { fileURLToPath } from 'url';
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const IS_DEV = process.env.NODE_ENV !== 'production';
 
-// ✅ CORS universal para GitHub Pages + Railway
+// Obtener __dirname en ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Middleware CORS universal para GitHub Pages + Railway
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   const allowedOrigins = [
@@ -29,7 +36,7 @@ app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Credentials', 'true');
 
   if (req.method === 'OPTIONS') {
-    return res.sendStatus(204); // ✅ Finaliza preflight correctamente
+    return res.sendStatus(204); // Finaliza preflight
   }
 
   next();
@@ -37,19 +44,14 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 
+// Rutas de la API
 app.use('/api/teachers', teacherRoutes);
 app.use('/api/levels', levelsRoutes);
 app.use('/api/grades', gradesRoutes);
 app.use('/api/students', studentsRoutes);
 app.use('/api/attendance', attendanceRoutes);
 
-app.get('/', (_req, res) => {
-  res.send('Backend activo desde Railway');
-});
-
-const recoveryTokens = new Map();
-const TOKEN_EXPIRY_MS = 15 * 60 * 1000;
-
+// Middleware de autenticación
 export const isAuthenticated = async (req, res, next) => {
   const userIdHeader = req.header('authorization');
   const userId = parseInt(userIdHeader, 10);
@@ -63,7 +65,6 @@ export const isAuthenticated = async (req, res, next) => {
     if (rows.length === 0) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
-
     req.userId = userId;
     next();
   } catch (err) {
@@ -72,6 +73,7 @@ export const isAuthenticated = async (req, res, next) => {
   }
 };
 
+// Login
 app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
@@ -92,6 +94,7 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
+// Signup
 app.post('/api/signup', async (req, res) => {
   const { name, email, password, recoveryWord, role } = req.body;
   if (!name || !email || !password || !role || !recoveryWord) {
@@ -121,6 +124,10 @@ app.post('/api/signup', async (req, res) => {
     res.status(500).json({ error: 'Error en el servidor' });
   }
 });
+
+// Password recovery y reset
+const recoveryTokens = new Map();
+const TOKEN_EXPIRY_MS = 15 * 60 * 1000;
 
 app.post('/api/recover-password', async (req, res) => {
   const { email, recoveryWord } = req.body;
@@ -170,49 +177,7 @@ app.post('/api/reset-password', async (req, res) => {
   }
 });
 
-app.post('/api/password-recovery', async (req, res) => {
-  const { email, recoveryWord } = req.body;
-  if (!email || !recoveryWord) {
-    return res.status(400).json({ error: 'Faltan campos' });
-  }
-
-  try {
-    const [rows] = await db.query(
-      'SELECT id FROM users WHERE email = ? AND recoveryWord = ?',
-      [email, recoveryWord]
-    );
-
-    if (rows.length === 0) {
-      return res.status(401).json({ error: 'Datos incorrectos' });
-    }
-
-    res.json({ ok: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Error en el servidor' });
-  }
-});
-
-app.post('/api/password-reset', async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Faltan campos' });
-  }
-
-  try {
-    const [result] = await db.query('UPDATE users SET password = ? WHERE email = ?', [password, email]);
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
-    }
-
-    res.json({ ok: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Error en el servidor' });
-  }
-});
-
+// Endpoints protegidos con autenticación
 app.get('/api/users', isAuthenticated, async (_req, res) => {
   try {
     const [rows] = await db.query('SELECT id, name, email, role FROM users');
@@ -237,6 +202,7 @@ app.get('/api/user/:email', isAuthenticated, async (req, res) => {
   }
 });
 
+// Endpoint debug (solo en desarrollo)
 if (IS_DEV) {
   app.get('/api/debug/users', async (_req, res) => {
     try {
@@ -248,20 +214,14 @@ if (IS_DEV) {
     }
   });
 }
-import path from 'path';
-import { fileURLToPath } from 'url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Servir archivos estáticos del frontend
+// Servir frontend React desde la carpeta dist
 app.use(express.static(path.join(__dirname, 'dist')));
 
-// Redirigir rutas no-API al index.html de React
+// Redirigir todas las rutas no-API a index.html para SPA React
 app.get(/^\/(?!api).*/, (_req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
-
 
 app.listen(PORT, () => {
   console.log(`✅ Servidor escuchando en http://localhost:${PORT}`);
